@@ -164,14 +164,7 @@
         return root;
       }
 
-      return root + '/' + encodeURIComponent(this.get(this.idAttribute));
-    },
-
-    /**
-     * @inheritdoc
-     */
-    parse: function (response, options) {
-      return this.cleanInput(response);
+      return root + '/' + encodeURIComponent(this.get(this.constructor.idKey));
     },
 
     /**
@@ -179,14 +172,15 @@
      */
     toJSON: function (options) {
       var attributes = Backbone.Model.prototype.toJSON.call(this, options);
-      this.constructor.integerFields.forEach(function (key) {
+
+      _.each(this.constructor.integerFields, function (key) {
         if (typeof attributes[key] !== 'undefined') {
           attributes[key]  = this.convertInteger(attributes[key]);
         }
       }, this);
 
       // Convert boolean fields.
-      this.constructor.booleanFields.forEach(function (key) {
+      _.each(this.constructor.booleanFields, function (key) {
         if (typeof attributes[key] !== 'undefined') {
           attributes[key] = this.convertBoolOutput(attributes[key]);
         }
@@ -231,21 +225,21 @@
      *   A cleaned value map.
      */
     cleanInput: function (values) {
-      this.constructor.integerFields.forEach(function (key) {
+      _.each(this.constructor.integerFields, function (key) {
         if (typeof values[key] !== 'undefined') {
           values[key]  = this.convertInteger(values[key]);
         }
       }, this);
 
       // Convert boolean fields.
-      this.constructor.booleanFields.forEach(function (key) {
+      _.each(this.constructor.booleanFields, function (key) {
         if (typeof values[key] !== 'undefined') {
           values[key] = this.convertBoolInput(values[key]);
         }
       }, this);
 
-      if (typeof values[this.idAttribute] !== 'undefined') {
-        values[this.idAttribute] = this.convertInteger(values[this.idAttribute]);
+      if (typeof values[this.constructor.idKey] !== 'undefined') {
+        values[this.constructor.idKey] = this.convertInteger(values[this.constructor.idKey]);
       }
 
       return values;
@@ -534,5 +528,5 @@
     getCsrfToken.token = false;
   }
 
-})(Backbone);
+})(Backbone, _);
 
