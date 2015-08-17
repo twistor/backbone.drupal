@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Backbone Drupal Library</title>
+  </head>
+  <body>
+
+    <div id="content"></div>
+
+    <script type="text/template" id="nodes-template">
+      <thead>
+        <tr class='header'>
+          <th>Title</th>
+          <th>Save</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </script>
+
+    <script type="text/template" id="node-template">
+      <td><input class="title" type="text" value="<%= title %>"></input></td>
+      <td><a class="save" href="#">X</a></td>
+    </script>
+
+    <script src="./jquery.js"></script>
+    <script src="./underscore.js"></script>
+    <script src="./backbone.js"></script>
+    <script src="./backbone.marionette.js"></script>
+    <script src="../backbone.drupal.js"></script>
+    <script>Backbone.Drupal.appRoot = 'http://7.dev/api';</script>
+    <script>
+
+    var session = new Backbone.Drupal.Model.Session();
+
+    var app = new Marionette.Application();
+
+    app.addRegions({
+      mainRegion: "#content"
+    });
+
+    app.addInitializer(function (options) {
+      var nodesView = new NodesView({
+        collection: options.nodes
+      });
+      app.mainRegion.show(nodesView);
+    });
+
+    Node = Backbone.Model.extend({});
+
+    Nodes = Backbone.Collection.extend({
+      model: Node
+    });
+
+    NodeView = Marionette.ItemView.extend({
+      template: "#node-template",
+      tagName: 'tr',
+      className: 'node',
+
+      ui: {
+        title: '.title'
+      },
+
+      events: {
+        'click a.save': 'updateTitle'
+      },
+
+      initialize: function () {
+        this.listenTo(this.model, "change:votes", this.render);
+      },
+
+      updateTitle: function () {
+        var self = this;
+
+        var title = this.ui.title.val();
+        this.model.set('title', title);
+        this.model.save().done(function () {
+          self.model.fetch();
+        });
+      }
+    });
+
+    NodesView = Marionette.CompositeView.extend({
+      tagName: "table",
+      id: "nodes",
+      template: "#nodes-template",
+      childView: NodeView,
+
+      initialize: function () {
+        this.listenTo(this.collection, "sort", this.renderCollection);
+      },
+
+      appendHtml: function (collectionView, itemView) {
+        collectionView.$("tbody").append(itemView.el);
+      }
+    });
+
+    var nodelist;
+
+    $(document).ready(function() {
+
+      session.login('admin', '1234').done(function () {
+        nodelist = new Backbone.Drupal.Collection.Node();
+
+        nodelist.fetch({remove: false}).done(function () {
+          nodelist.each(function (model) {
+            model.fetch();
+          });
+        });
+
+        app.start({nodes: nodelist});
+      });
+    });
+    </script>
+  </body>
+</html>
