@@ -28,8 +28,7 @@ NodeView = Marionette.ItemView.extend({
   },
 
   events: {
-    'click a.save': 'updateTitle',
-    'loggedIn': 'updateState'
+    'click a.save': 'updateTitle'
   },
 
   updateTitle: function () {
@@ -38,30 +37,21 @@ NodeView = Marionette.ItemView.extend({
     var title = this.ui.title.val();
     this.model.set('title', title);
     this.model.save().done(function () {
+      // We have to re-fetch after a save, since the updated time will change
+      // and we won't be able to save again.
       self.model.fetch().done(function () {
         $('#messages').text('Node title updated.').slideDown('slow').delay(1500).slideUp('slow');
       });
     });
-  },
-
-  updateState: function () {
-    this.ui.title.prop('disabled', false);
   }
+
 });
 
 NodesView = Marionette.CompositeView.extend({
   id: "nodes",
   template: "#nodes-template",
   childView: NodeView,
-  childViewContainer: "tbody",
-
-  initialize: function () {
-    this.listenTo(this.collection, "sort", this.renderCollection);
-  },
-
-  appendHtml: function (collectionView, itemView) {
-    collectionView.$("tbody").append(itemView.el);
-  }
+  childViewContainer: "tbody"
 });
 
 var nodelist;
@@ -71,11 +61,7 @@ $(document).ready(function() {
   session.login(username, password).done(function () {
     nodelist = new Backbone.Drupal.Collection.Node();
 
-    nodelist.fetch({remove: false}).done(function () {
-      nodelist.each(function (model) {
-        model.fetch();
-      });
-    });
+    nodelist.fetch({remove: false, data: {pagesize: 10}});
 
     app.start({nodes: nodelist});
   });
